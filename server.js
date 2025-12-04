@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import shortid from 'shortid';
 import { createClient } from 'redis';
+import fs from 'fs';
+import https from 'https';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +14,8 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const SSL_KEY_PATH = process.env.SSL_KEY_PATH;
+const SSL_CERT_PATH = process.env.SSL_CERT_PATH;
 
 const client = createClient({ url: REDIS_URL });
 
@@ -159,6 +163,25 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
-});
+let serverStarted = false;
+
+if (SSL_KEY_PATH && SSL_CERT_PATH) {
+  try {
+    const sslOptions = {
+      key: fs.readFileSync(SSL_KEY_PATH),
+      cert: fs.readFileSync(SSL_CERT_PATH)
+    };
+    https.createServer(sslOptions, app).listen(PORT, () => {
+      console.log(`HTTPS server listening on https://localhost:${PORT}`);
+      serverStarted = true;
+    });
+  } catch (err) {
+    console.warn('SSL certificates not found or failed to load. Falling back to HTTP.');
+  }
+}
+
+if (!serverStarted) {
+  app.listen(PORT, () => {
+    console.log(`HTTP server listening on http://localhost:${PORT}`);
+  });
+}
