@@ -166,7 +166,11 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-let serverStarted = false;
+const startHttp = () => {
+  app.listen(PORT, () => {
+    console.log(`HTTP server listening on http://localhost:${PORT}`);
+  });
+};
 
 if (SSL_KEY_PATH && SSL_CERT_PATH) {
   try {
@@ -174,19 +178,23 @@ if (SSL_KEY_PATH && SSL_CERT_PATH) {
       key: fs.readFileSync(SSL_KEY_PATH),
       cert: fs.readFileSync(SSL_CERT_PATH),
     };
-    https.createServer(sslOptions, app).listen(PORT, () => {
+    const httpsServer = https.createServer(sslOptions, app);
+    httpsServer.on("error", (err) => {
+      console.warn(
+        "Failed to start HTTPS. Falling back to HTTP.",
+        err?.message || err
+      );
+      startHttp();
+    });
+    httpsServer.listen(PORT, () => {
       console.log(`HTTPS server listening on https://localhost:${PORT}`);
-      serverStarted = true;
     });
   } catch (err) {
     console.warn(
       "SSL certificates not found or failed to load. Falling back to HTTP."
     );
+    startHttp();
   }
-}
-console.log("serverStarted: " + serverStarted);
-if (!serverStarted) {
-  app.listen(PORT, () => {
-    console.log(`HTTP server listening on http://localhost:${PORT}`);
-  });
+} else {
+  startHttp();
 }
