@@ -156,6 +156,22 @@ button:hover:not(:disabled) {
   border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
+.badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-btn {
+  background: rgba(56, 189, 248, 0.15);
+  color: #e2e8f0;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  min-width: 74px;
+}
+
 .table {
   display: grid;
   gap: 6px;

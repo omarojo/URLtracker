@@ -59,6 +59,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     loadLinks();
@@ -75,6 +76,12 @@ export default function App() {
       loadStats(selectedId, { silent: true });
     }
   }, [startDate, endDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!copyStatus) return undefined;
+    const timeout = setTimeout(() => setCopyStatus(""), 1600);
+    return () => clearTimeout(timeout);
+  }, [copyStatus]);
 
   const shortBase = useMemo(() => {
     if (links.length && links[0].shortUrl) {
@@ -94,6 +101,18 @@ export default function App() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function handleCopyShortUrl(shortUrl) {
+    if (!shortUrl) return;
+    if (!navigator?.clipboard) {
+      setCopyStatus("Copy not supported");
+      return;
+    }
+    navigator.clipboard
+      .writeText(shortUrl)
+      .then(() => setCopyStatus("Copied!"))
+      .catch(() => setCopyStatus("Copy failed"));
   }
 
   async function loadStats(id, opts = {}) {
@@ -213,16 +232,32 @@ export default function App() {
               </p>
             </div>
             {stats.id ? (
-              <div className="badge">
-                <span>Short URL</span>
-                <a
-                  href={stats.shortUrl || `${shortBase}/${stats.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {stats.shortUrl || `${shortBase}/${stats.id}`}
-                </a>
-              </div>
+              (() => {
+                const shortUrl = stats.shortUrl || `${shortBase}/${stats.id}`;
+                return (
+                  <div className="badge">
+                    <span>Short URL</span>
+                    <div className="badge-row">
+                      <a
+                        href={shortUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate"
+                        title={shortUrl}
+                      >
+                        {shortUrl}
+                      </a>
+                      <button
+                        type="button"
+                        className="copy-btn"
+                        onClick={() => handleCopyShortUrl(shortUrl)}
+                      >
+                        {copyStatus ? copyStatus : "Copy"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()
             ) : null}
           </div>
 
